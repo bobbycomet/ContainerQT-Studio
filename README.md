@@ -39,6 +39,15 @@ drag-and-drop file import, and one-click export of your results back to your com
 Also: a **Fix** button that repairs Docker and your environments, a **compatibility check** before building, a
 **health check** per environment, and a hardware-aware **resource advisor**. It *advises*; you decide.
 
+## Built-in Environment View
+<img width="1920" height="1080" alt="Screenshot_20261125_225002" src="https://github.com/user-attachments/assets/23212abd-2afd-4c11-af5f-de0ae7b92a5b" />
+
+## Browser Environment View
+<img width="1920" height="1080" alt="Screenshot_20261125_225026" src="https://github.com/user-attachments/assets/49598175-8844-483b-b495-7e1ba5ffb99b" />
+
+## Terminal View
+<img width="1920" height="1080" alt="Screenshot_20261125_225044" src="https://github.com/user-attachments/assets/09147781-237f-4be0-89f2-45860a434f53" />
+
 ## Install
 
 **AppImage** (glibc 2.34 or newer: Ubuntu 22.04+, Debian 12+, Fedora 35+, RHEL/Rocky/Alma 9+, Arch, openSUSE):
