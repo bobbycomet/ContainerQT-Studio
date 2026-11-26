@@ -122,7 +122,3 @@ docs/wiki/           in-depth documentation
 
 The Python package and command are `containerqt`; the app is called ContainerQT Studio. For compatibility with existing installs, saved settings and data keep their original `dockerqt` names (`~/.config/dockerqt`, the `DockerQT` storage folders, the `.dockerqt-env` marker, the privileged helper and polkit action).
 
-## License
-
-No `LICENSE` file is included yet. Add the one you want (and set `project_license` in
-`packaging/io.github.bobbycomet.dockerqt.metainfo.xml`).
