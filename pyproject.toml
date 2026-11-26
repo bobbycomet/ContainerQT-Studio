@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "containerqt"
+dynamic = ["version"]
+description = "A PyQt6 GUI for developing inside Docker: pick a distro, build, view the desktop, export."
+requires-python = ">=3.9"
+dependencies = ["PyQt6>=6.5"]
+
+[project.optional-dependencies]
+desktop = ["PyQt6-WebEngine>=6.5"]   # embeds the container desktop (noVNC) in the window
+dev = ["pytest"]
+
+[project.gui-scripts]
+containerqt = "containerqt.gui.app:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["containerqt*"]
+
+[tool.setuptools.package-data]
+containerqt = ["resources/*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "containerqt.__version__" }

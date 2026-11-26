@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=ContainerQT Studio
+GenericName=Docker Development Environments
+Comment=Develop inside Docker with a GUI: any distro, build scripts, desktop view, export
+Exec=containerqt %F
+Icon=io.github.bobbycomet.dockerqt
+Terminal=false
+Categories=Development;
+Keywords=docker;container;linux;build;appimage;deb;vm;
+StartupWMClass=dockerqt

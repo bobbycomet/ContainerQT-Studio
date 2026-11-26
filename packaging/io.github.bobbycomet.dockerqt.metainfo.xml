@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.bobbycomet.dockerqt</id>
+  <name>ContainerQT Studio</name>
+  <summary>Develop inside Docker with a GUI</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <description>
+    <p>Pick any Linux distribution, let ContainerQT Studio set up the container, then build packages (AppImage, .deb, .rpm and more), use the environment's desktop like a VM, import your files and export the results to your host.</p>
+  </description>
+  <launchable type="desktop-id">io.github.bobbycomet.dockerqt.desktop</launchable>
+  <provides><binary>containerqt</binary></provides>
+</component>

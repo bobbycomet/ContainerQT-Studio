@@ -1,0 +1,24 @@
+#!/bin/sh
+# ContainerQT AppImage launcher.
+HERE="$(dirname "$(readlink -f "$0")")"
+
+# Remember the host's values of everything we override, so ContainerQT can hand a clean environment to
+# host programs it starts (docker, pkexec, xdg-open, terminals). See containerqt/paths.py:host_env().
+for v in LD_LIBRARY_PATH PYTHONHOME PYTHONPATH PYTHONNOUSERSITE QT_PLUGIN_PATH \
+         QT_QPA_PLATFORM_PLUGIN_PATH QTWEBENGINE_DISABLE_SANDBOX QTWEBENGINE_CHROMIUM_FLAGS; do
+    if eval "[ \"\${$v+set}\" = set ]"; then
+        eval "export DOCKERQT_ORIG_$v=\"\$$v\""
+    else
+        export "DOCKERQT_ORIG_$v=__unset__"
+    fi
+done
+
+export APPDIR="$HERE"
+unset PYTHONHOME PYTHONPATH QT_PLUGIN_PATH QT_QPA_PLATFORM_PLUGIN_PATH
+export PYTHONNOUSERSITE=1
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export XDG_DATA_DIRS="$HERE/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+# Chromium's sandbox can't work from an AppImage's nosuid FUSE mount.
+export QTWEBENGINE_DISABLE_SANDBOX=1
+
+exec "$HERE/usr/python/bin/python3" -s -m containerqt "$@"

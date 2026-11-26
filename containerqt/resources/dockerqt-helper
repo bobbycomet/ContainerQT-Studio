@@ -1,0 +1,138 @@
+#!/bin/sh
+# ContainerQT privileged helper.
+#
+# Installed root-owned at /usr/libexec/dockerqt/dockerqt-helper and run through
+# pkexec + polkit (action io.github.bobbycomet.dockerqt.helper). It deliberately
+# accepts only a fixed list of actions and never executes caller-supplied commands.
+#
+#   install-docker   install Docker with the distro package manager, start it, add the caller to `docker`
+#   start-docker     enable + start the Docker daemon
+#   restart-docker   restart the Docker daemon
+#   add-user         add the invoking user to the `docker` group
+#   fix-socket       repair ownership/permissions of /var/run/docker.sock
+#   status           print what the helper can see
+#   uninstall        remove this helper and its polkit policy
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
+say() { echo "[helper] $*"; }
+die() { echo "[helper] ERROR: $*" >&2; exit 1; }
+
+[ "$(id -u)" -eq 0 ] || die "must run as root (use pkexec)"
+
+caller() {
+    [ -n "${PKEXEC_UID:-}" ] || die "no invoking user; run this through pkexec"
+    u="$(getent passwd "$PKEXEC_UID" | cut -d: -f1)"
+    [ -n "$u" ] && [ "$PKEXEC_UID" -ne 0 ] || die "refusing to modify the root account"
+    echo "$u"
+}
+
+pm() {
+    for c in apt-get dnf pacman zypper apk; do
+        command -v "$c" >/dev/null 2>&1 && { echo "$c"; return; }
+    done
+    echo none
+}
+
+have_systemd() { [ -d /run/systemd/system ]; }
+
+start_docker() {
+    if have_systemd; then
+        systemctl enable --now docker.socket >/dev/null 2>&1
+        systemctl enable --now docker || return 1
+    elif command -v rc-service >/dev/null 2>&1; then
+        rc-update add docker default >/dev/null 2>&1
+        rc-service docker start || return 1
+    elif command -v service >/dev/null 2>&1; then
+        service docker start || return 1
+    else
+        die "no known service manager; start dockerd manually"
+    fi
+}
+
+ensure_group() {
+    getent group docker >/dev/null 2>&1 || groupadd docker 2>/dev/null || addgroup docker
+}
+
+add_user() {
+    u="$(caller)" || exit 1
+    ensure_group
+    if command -v usermod >/dev/null 2>&1; then
+        usermod -aG docker "$u" || die "usermod failed"
+    else
+        addgroup "$u" docker || die "addgroup failed"
+    fi
+    say "added $u to the docker group (log out and in again, or ContainerQT Studio will use 'sg docker')"
+}
+
+fix_socket() {
+    ensure_group
+    if [ -S /var/run/docker.sock ]; then
+        chgrp docker /var/run/docker.sock && chmod 660 /var/run/docker.sock && say "socket permissions repaired"
+    else
+        say "docker.sock not present; (re)starting the daemon"
+        start_docker || die "could not start docker"
+    fi
+}
+
+get_docker_script() {
+    command -v curl >/dev/null 2>&1 || die "curl is required for the fallback installer"
+    curl -fsSL https://get.docker.com | sh
+}
+
+install_docker() {
+    caller >/dev/null || exit 1
+    say "package manager: $(pm)"
+    case "$(pm)" in
+        apt-get)
+            export DEBIAN_FRONTEND=noninteractive
+            apt-get update && apt-get install -y docker.io || get_docker_script || die "install failed"
+            ;;
+        dnf)
+            dnf install -y --allowerasing moby-engine docker-cli containerd \
+                || dnf install -y --allowerasing docker \
+                || get_docker_script || die "install failed"
+            ;;
+        pacman) pacman -Sy --noconfirm --needed docker || die "install failed" ;;
+        zypper) zypper -n install docker || die "install failed" ;;
+        apk) apk add --no-cache docker || die "install failed" ;;
+        *) get_docker_script || die "unsupported distribution" ;;
+    esac
+    ensure_group
+    start_docker || die "Docker installed but the daemon could not be started"
+    add_user
+    fix_socket
+    say "Docker is installed and running"
+}
+
+status() {
+    say "user: ${PKEXEC_UID:-unknown}  package manager: $(pm)"
+    command -v docker >/dev/null 2>&1 && say "docker: $(docker --version)" || say "docker: not installed"
+    ls -l /var/run/docker.sock 2>/dev/null || say "docker.sock: missing"
+}
+
+uninstall() {
+    rm -f /usr/share/polkit-1/actions/io.github.bobbycomet.dockerqt.policy
+    rm -rf /usr/libexec/dockerqt
+    say "helper and polkit policy removed"
+}
+
+case "${1:-}" in
+    install-docker) install_docker ;;
+    start-docker) start_docker && say "docker started" ;;
+    restart-docker)
+        if have_systemd; then
+            systemctl restart docker && say "docker restarted"
+        elif command -v rc-service >/dev/null 2>&1; then
+            rc-service docker restart && say "docker restarted"
+        else
+            service docker restart && say "docker restarted"
+        fi
+        ;;
+    add-user) add_user ;;
+    fix-socket) fix_socket ;;
+    status) status ;;
+    uninstall) uninstall ;;
+    *) die "unknown action '${1:-}'. valid: install-docker start-docker restart-docker add-user fix-socket status uninstall" ;;
+esac
